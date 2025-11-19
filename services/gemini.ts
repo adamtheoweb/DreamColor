@@ -3,7 +3,7 @@ import { ChatMessage } from "../types";
 
 // Initialize API
 // NOTE: process.env.API_KEY is injected by the runtime environment.
-const apiKey = "VITE_API_KEY";
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
 
 const TEXT_MODEL = 'gemini-3-pro-preview';
 const IMAGE_MODEL = 'imagen-4.0-generate-001';
