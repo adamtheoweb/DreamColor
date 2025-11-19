@@ -9,7 +9,7 @@ const ChatBot: React.FC = () => {
     {
       id: 'welcome',
       role: 'model',
-      text: "Hi! I'm the DreamColor helper. Need ideas for a coloring book theme?",
+      text: "Hi! I'm your DreamColor assistant. Need ideas for a coloring book theme? I can help with anything from 'Mandalas' to 'Cyberpunk Cities'.",
       timestamp: Date.now()
     }
   ]);

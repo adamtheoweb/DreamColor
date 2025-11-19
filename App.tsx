@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Palette, Download, RefreshCw, Sparkles, Loader2, BookOpen, X } from 'lucide-react';
+import { Palette, Download, RefreshCw, Sparkles, Loader2, Printer, BookOpen, X } from 'lucide-react';
 import { generatePagePrompts, generateColoringImage } from './services/gemini';
 import { generatePDF } from './utils/pdf';
 import { ColoringPage, GenerationState } from './types';
@@ -29,7 +29,7 @@ function App() {
     setCompletedCount(0);
 
     try {
-      // 1. Generate Prompts
+      // 1. Generate Prompts (3 images)
       const descriptions = await generatePagePrompts(state.theme);
       
       const initialPages: ColoringPage[] = descriptions.map((desc, idx) => ({
@@ -41,10 +41,11 @@ function App() {
 
       setState(prev => ({ ...prev, pages: initialPages }));
 
-      // 2. Generate Images Sequentially to show progress and manage load
+      // 2. Generate Images Sequentially
       const updatedPages = [...initialPages];
+      const totalImages = updatedPages.length;
       
-      for (let i = 0; i < updatedPages.length; i++) {
+      for (let i = 0; i < totalImages; i++) {
         // Update status to generating
         updatedPages[i] = { ...updatedPages[i], status: 'generating' };
         setState(prev => ({ ...prev, pages: [...updatedPages] }));
@@ -68,7 +69,7 @@ function App() {
       setState(prev => ({
         ...prev,
         isGenerating: false,
-        error: "Something went wrong while creating your book. Please try again!",
+        error: "Something went wrong while creating your coloring book. Please try again!",
       }));
     }
   }, [state.theme]);
@@ -104,10 +105,10 @@ function App() {
             <span className="text-xl font-bold text-indigo-600 tracking-tight">DreamColor</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold text-slate-800 mb-4 tracking-tight">
-            Create Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-pink-500">Custom</span> Coloring Book
+            Create Your Custom <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-pink-500">Coloring Book</span>
           </h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Enter a theme and we'll use AI to generate a unique, printable coloring book for any age.
+            Enter a theme and we'll use AI to generate a unique, printable coloring book. Perfect for all ages.
           </p>
         </header>
 
@@ -121,8 +122,7 @@ function App() {
                   type="text"
                   value={state.theme}
                   onChange={(e) => setState(prev => ({ ...prev, theme: e.target.value }))}
-                  onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-                  placeholder="e.g., Cyberpunk City, Mandalas, Space Dinosaurs"
+                  placeholder="e.g., Space Dinosaurs, Floral Patterns, Cyberpunk City"
                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all text-lg"
                 />
               </div>
@@ -145,18 +145,18 @@ function App() {
               <Loader2 className="w-16 h-16 text-indigo-500 animate-spin mx-auto mb-6" />
               <h2 className="text-2xl font-bold text-slate-800 mb-2">Creating Your Book...</h2>
               <p className="text-slate-500 mb-8">
-                Designing page {completedCount + 1} of 5 for "{state.theme}".
+                Designing page {completedCount + 1} of 3 for theme: {state.theme}.
               </p>
               
               {/* Progress Bar */}
               <div className="h-4 bg-slate-100 rounded-full overflow-hidden mb-8 max-w-md mx-auto">
                 <div 
                   className="h-full bg-gradient-to-r from-indigo-500 to-pink-500 transition-all duration-500 ease-out"
-                  style={{ width: `${(completedCount / 5) * 100}%` }}
+                  style={{ width: `${(completedCount / 3) * 100}%` }}
                 ></div>
               </div>
 
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-3 gap-6">
                 {state.pages.map((page, idx) => (
                   <div key={idx} className={`aspect-[3/4] rounded-lg border-2 ${page.status === 'completed' ? 'border-green-400 bg-green-50' : page.status === 'generating' ? 'border-indigo-400 bg-indigo-50 animate-pulse' : 'border-slate-100 bg-slate-50'} flex items-center justify-center transition-all`}>
                     {page.status === 'completed' ? (
@@ -177,7 +177,7 @@ function App() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-lg border border-slate-100">
               <div>
                 <h2 className="text-2xl font-bold text-slate-800">Ready to Print!</h2>
-                <p className="text-slate-500">Here are your 5 unique coloring pages.</p>
+                <p className="text-slate-500">Here are your 3 unique coloring pages.</p>
               </div>
               <div className="flex gap-3">
                 <button onClick={handleReset} className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors flex items-center gap-2">
@@ -189,7 +189,7 @@ function App() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {state.pages.map((page, idx) => (
                 <div key={idx} className="group relative aspect-[3/4] bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 hover:shadow-xl transition-all duration-300">
                    {page.status === 'completed' ? (
@@ -226,11 +226,11 @@ function App() {
                 <ul className="space-y-3 text-slate-600">
                   <li className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-bold">✓</div>
-                    Custom cover page
+                    Custom cover with theme title
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-bold">✓</div>
-                    5 high-resolution coloring pages
+                    3 high-resolution coloring pages
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-bold">✓</div>
@@ -244,7 +244,7 @@ function App() {
                   <div className="border border-slate-800 w-full h-full flex flex-col items-center justify-center p-2">
                     <div className="font-bold text-xl mb-2">Coloring Book</div>
                     <div className="text-xs text-slate-500">Theme</div>
-                    <div className="text-lg mb-4 break-words w-full leading-tight">{state.theme}</div>
+                    <div className="text-lg font-bold mb-4">{state.theme}</div>
                   </div>
               </div>
             </div>

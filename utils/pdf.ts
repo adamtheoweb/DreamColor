@@ -24,7 +24,7 @@ export const generatePDF = (theme: string, pages: ColoringPage[]) => {
   doc.setFontSize(40);
   doc.text("Coloring Book", pageWidth / 2, 90, { align: "center" });
 
-  doc.setFontSize(20);
+  doc.setFontSize(24);
   doc.setFont("helvetica", "normal");
   doc.text(`Theme: ${theme}`, pageWidth / 2, 120, { align: "center" });
 
@@ -55,6 +55,7 @@ export const generatePDF = (theme: string, pages: ColoringPage[]) => {
     }
   });
 
-  const safeFilename = theme.replace(/[^a-z0-9]/gi, '_').slice(0, 30);
-  doc.save(`${safeFilename}_Coloring_Book.pdf`);
+  // Sanitize filename
+  const filename = theme.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  doc.save(`coloring_book_${filename}.pdf`);
 };
