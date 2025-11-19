@@ -1,9 +1,38 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ChatMessage } from "../types";
 
+// Helper function to safely retrieve API key from various environment variable conventions
+// This enables support for Vercel deployments with Next.js, Vite, or Create React App
+const getApiKey = (): string | undefined => {
+  // 1. Check standard process.env (Node.js, Webpack, Next.js, CRA)
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env.API_KEY) return process.env.API_KEY;
+    if (process.env.NEXT_PUBLIC_API_KEY) return process.env.NEXT_PUBLIC_API_KEY; // Next.js
+    if (process.env.REACT_APP_API_KEY) return process.env.REACT_APP_API_KEY; // Create React App
+  }
+
+  // 2. Check import.meta.env (Vite)
+  try {
+    // @ts-ignore - import.meta might not exist in all environments
+    if (import.meta && import.meta.env && import.meta.env.VITE_API_KEY) {
+      // @ts-ignore
+      return import.meta.env.VITE_API_KEY;
+    }
+  } catch (e) {
+    // Ignore errors if import.meta is accessed in an environment that doesn't support it
+  }
+
+  return undefined;
+};
+
 // Initialize API
+const apiKey = getApiKey();
+if (!apiKey) {
+  console.warn("API Key not found. Please set API_KEY, NEXT_PUBLIC_API_KEY, or VITE_API_KEY in your environment variables.");
+}
+
 // NOTE: process.env.API_KEY is injected by the runtime environment.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: apiKey || process.env.API_KEY || '' });
 
 const TEXT_MODEL = 'gemini-3-pro-preview';
 const IMAGE_MODEL = 'imagen-4.0-generate-001';
