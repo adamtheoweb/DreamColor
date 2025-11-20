@@ -1,28 +1,41 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ChatMessage } from "../types";
 
-// -----------------------------------------------------------
-// 1. ÄNDERUNG: Der API-Key Zugriff (Passend für Vite/Vercel)
-// -----------------------------------------------------------
-// Wir nutzen direkt den Vite-Standard, weil wir die vite.config.ts aufgeräumt haben.
-const apiKey = import.meta.env.VITE_API_KEY;
+// Helper function to safely retrieve API key from various environment variable conventions
+// This enables support for Vercel deployments with Next.js, Vite, or Create React App
+const getApiKey = (): string | undefined => {
+  // 1. Check standard process.env (Node.js, Webpack, Next.js, CRA)
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env.API_KEY) return process.env.API_KEY;
+    if (process.env.NEXT_PUBLIC_API_KEY) return process.env.NEXT_PUBLIC_API_KEY; // Next.js
+    if (process.env.REACT_APP_API_KEY) return process.env.REACT_APP_API_KEY; // Create React App
+  }
 
+  // 2. Check import.meta.env (Vite)
+  try {
+    // @ts-ignore - import.meta might not exist in all environments
+    if (import.meta && import.meta.env && import.meta.env.VITE_API_KEY) {
+      // @ts-ignore
+      return import.meta.env.VITE_API_KEY;
+    }
+  } catch (e) {
+    // Ignore errors if import.meta is accessed in an environment that doesn't support it
+  }
+
+  return undefined;
+};
+
+// Initialize API
+const apiKey = getApiKey();
 if (!apiKey) {
-  console.warn("WARNUNG: VITE_API_KEY fehlt! Bitte in Vercel bei Environment Variables eintragen.");
+  console.warn("API Key not found. Please set API_KEY, NEXT_PUBLIC_API_KEY, or VITE_API_KEY in your environment variables.");
 }
 
-const ai = new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
+// NOTE: process.env.API_KEY is injected by the runtime environment.
+const ai = new GoogleGenAI({ apiKey: apiKey || process.env.API_KEY || '' });
 
-
-// -----------------------------------------------------------
-// 2. ÄNDERUNG: Die Modelle (Auf stabile Versionen setzen)
-// -----------------------------------------------------------
-// Auch wenn Gemini 3 da ist: Für die API nutzen wir das, was stabil läuft.
-// Sobald die exakten API-Strings für 3.0 öffentlich sind, tauschen wir das hier einfach aus.
-
-const TEXT_MODEL = 'gemini-1.5-flash';      // Schnell & Stabil (statt gemini-3-pro-preview)
-const IMAGE_MODEL = 'imagen-3.0-generate-001'; // Das aktuellste Bild-Modell (imagen-4 gibt es noch nicht per API)
-
+const TEXT_MODEL = 'gemini-3-pro-preview';
+const IMAGE_MODEL = 'imagen-4.0-generate-001';
 
 /**
  * Generates 3 distinct image prompts based on a theme for a coloring book.
@@ -51,15 +64,11 @@ export const generatePagePrompts = async (theme: string): Promise<string[]> => {
       }
     });
     
-    // Robusterer Abruf des Textes (manchmal ist es eine Funktion, manchmal Property)
-    const text = typeof response.text === 'function' ? response.text() : response.text;
-
+    const text = response.text;
     if (!text) throw new Error("No response from AI");
     
-    // Sicherheits-Bereinigung falls Markdown dabei ist
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-    return JSON.parse(cleanText);
+    // Parse the JSON array
+    return JSON.parse(text);
   } catch (error) {
     console.error("Error generating prompts:", error);
     // Fallback prompts if JSON parsing fails or AI errors
@@ -96,9 +105,7 @@ export const generateColoringImage = async (sceneDescription: string): Promise<s
       },
     });
 
-    // Pfad sicher abrufen
-    const base64Image = response.generatedImages?.[0]?.image?.imageBytes;
-    
+    const base64Image = response.generatedImages[0]?.image?.imageBytes;
     if (!base64Image) throw new Error("No image generated");
     
     return `data:image/jpeg;base64,${base64Image}`;
@@ -115,7 +122,7 @@ export const sendChatMessage = async (history: ChatMessage[], newMessage: string
   const chat = ai.chats.create({
     model: TEXT_MODEL,
     config: {
-      systemInstruction: "You are a creative assistant for a coloring book app. Help users brainstorm creative themes. Keep responses short.",
+      systemInstruction: "You are a creative assistant for a coloring book app. Help users brainstorm creative themes (e.g., 'Cyberpunk Cityscape', 'Floral Mandalas', 'Space Dinosaurs'). Keep responses short, encouraging, and helpful.",
     },
     history: history.map(h => ({
       role: h.role,
@@ -124,6 +131,5 @@ export const sendChatMessage = async (history: ChatMessage[], newMessage: string
   });
 
   const result = await chat.sendMessage({ message: newMessage });
-  const text = typeof result.text === 'function' ? result.text() : result.text;
-  return text || "I'm having trouble thinking right now, try again!";
+  return result.text || "I'm having trouble thinking right now, try again!";
 };
